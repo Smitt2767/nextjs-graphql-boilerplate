@@ -74,6 +74,6 @@
     @apply h-full;
   }
   body {
-    @apply bg-background text-foreground h-full;
+    @apply bg-background text-foreground h-full antialiased;
   }
 }
