@@ -12,3 +12,16 @@ export const GET_NEW_TOKEN = gql`
     }
   }
 `;
+
+export const LOGIN = gql`
+  ${USER_FRAGMENT}
+  mutation Login($data: LoginInput!) {
+    login(data: $data) {
+      accessToken
+      refreshToken
+      user {
+        ...UserFragment
+      }
+    }
+  }
+`;

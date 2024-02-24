@@ -16,6 +16,7 @@ import { onError } from '@apollo/client/link/error';
 import { setContext } from '@apollo/client/link/context';
 import { GET_NEW_TOKEN } from '@/graphql/mutations';
 import isFunction from 'lodash/isFunction';
+import { authServerLink, mainServerLink } from './links';
 
 import 'client-only';
 
@@ -26,14 +27,6 @@ interface ClientOptions {
 }
 
 interface Context extends DefaultContext, ClientOptions {}
-
-const authServerLink = new HttpLink({
-  uri: process.env.NEXT_PUBLIC_AUTH_SERVER_GRAPHQL_URL
-});
-
-const mainServerLink = new HttpLink({
-  uri: process.env.NEXT_PUBLIC_MAIN_SERVER_GRAPHQL_URL
-});
 
 const getNewToken = async (refreshToken?: string) => {
   if (!refreshToken) {
@@ -67,6 +60,9 @@ const contextLink = setContext((_, defaultContext) => {
   return {
     headers: {
       authorization: accessToken ? `Bearer ${accessToken}` : '',
+      // TODO: remove this
+      'x-workspace-id': 'f2ff9e3a-7c6b-47fa-a0d6-f2e695d060b4',
+      'x-app-id': '3deebedd-3e44-40ad-9fbf-d72a1f70d756',
       ...headers
     }
   };

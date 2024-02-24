@@ -10,3 +10,7 @@ export const GRAPHQL_ERROR_CODES = {
   SESSION_EXPIRED: 'SESSION_EXPIRED',
   UNAUTHORIZED: 'UNAUTHORIZED'
 };
+
+export const ROUTES = {
+  LOGIN: '/login'
+};
