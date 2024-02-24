@@ -62,11 +62,12 @@ const getNewToken = async (refreshToken?: string) => {
 };
 
 const contextLink = setContext((_, defaultContext) => {
-  const { accessToken } = defaultContext as unknown as Context;
+  const { accessToken, headers } = defaultContext as unknown as Context;
 
   return {
     headers: {
-      authorization: accessToken ? `Bearer ${accessToken}` : ''
+      authorization: accessToken ? `Bearer ${accessToken}` : '',
+      ...headers
     }
   };
 });
