@@ -6,6 +6,7 @@ import { serverAuthClient } from './lib/apollo/server';
 import { LOGIN } from './graphql/mutations';
 import { type LoginResponseData, type User, type CurrentUserResponseData } from './types';
 import { CURRENT_USER } from './graphql/queries';
+import { ApolloError } from '@apollo/client';
 
 interface SessionUser {
   accessToken: string;
@@ -44,37 +45,52 @@ export const {
     CredentialsProvider({
       async authorize(credentials) {
         const validateFields = LoginSchema.safeParse(credentials);
-
-        if (!validateFields.success) {
-          throw new AuthError('VALIDATION_ERROR', 'Please provide email & password');
-        }
-
-        const { data, errors } = await serverAuthClient.mutate<LoginResponseData>({
-          mutation: LOGIN,
-          variables: {
-            data: {
-              email: validateFields.data.email,
-              password: validateFields.data.password
-            }
+        try {
+          if (!validateFields.success) {
+            throw new AuthError('VALIDATION_ERROR', 'Please provide email & password');
           }
-        });
+          const { data, errors } = await serverAuthClient.mutate<LoginResponseData>({
+            mutation: LOGIN,
+            variables: {
+              data: {
+                email: validateFields.data.email,
+                password: validateFields.data.password
+              }
+            }
+          });
 
-        if (errors && errors?.length > 0) {
-          const error = errors[0];
-          const code = error.extensions.code as string;
-          throw new AuthError(code, error.message);
+          if (errors && errors.length > 0) {
+            const error = errors[0];
+            const code = error.extensions.code as string;
+            throw new AuthError(code, error.message);
+          }
+
+          if (!data?.login) {
+            throw new AuthError('INVALID_CREDENTIAL', 'Invalid credentials');
+          }
+
+          return {
+            accessToken: data.login.accessToken,
+            refreshToken: data.login.refreshToken,
+            user: data.login.user,
+            id: data.login.user.id
+          };
+        } catch (error) {
+          if (error instanceof ApolloError) {
+            const { graphQLErrors, networkError } = error;
+            if (graphQLErrors.length > 0) {
+              const error = graphQLErrors[0];
+              const code = error.extensions.code as string;
+              throw new AuthError(code, error.message);
+            }
+            if (networkError) {
+              throw new AuthError('NETWORK_ERROR', networkError.message);
+            }
+          } else if (error instanceof Error) {
+            throw new AuthError('SOMETHING_WENT_WRONG', error.message);
+          }
+          throw new AuthError('SOMETHING_WENT_WRONG', 'Something went wrong');
         }
-
-        if (!data?.login) {
-          throw new AuthError('INVALID_CREDENTIAL', 'Invalid credentials');
-        }
-
-        return {
-          accessToken: data.login.accessToken,
-          refreshToken: data.login.refreshToken,
-          user: data.login.user,
-          id: data.login.user.id
-        };
       }
     })
   ],
