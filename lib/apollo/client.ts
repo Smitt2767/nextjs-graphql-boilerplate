@@ -45,9 +45,10 @@ const getNewToken = async (refreshToken?: string) => {
       }
     });
 
-    if (errors) throw new Error(errors[0].message);
-    if (!data?.refreshToken?.accessToken) throw new Error('Something went wrong!');
-    return data.refreshToken.accessToken as string;
+    if (data && data.refreshToken && data.refreshToken.accessToken)
+      return data.refreshToken.accessToken;
+
+    throw new Error(errors?.[0].message ?? 'Something went wrong!');
   } catch (error) {
     if (error instanceof Error) throw new Error(error.message);
     throw new Error('Something went wrong!');

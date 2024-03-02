@@ -1,8 +1,6 @@
-import { gql } from '@apollo/client';
-import { USER_FRAGMENT } from './fragments';
+import { gql } from '@/types/__generated__';
 
-export const GET_NEW_TOKEN = gql`
-  ${USER_FRAGMENT}
+export const GET_NEW_TOKEN = gql(`
   mutation RefreshToken($data: RefreshTokenInput!) {
     refreshToken(data: $data) {
       accessToken
@@ -11,17 +9,4 @@ export const GET_NEW_TOKEN = gql`
       }
     }
   }
-`;
-
-export const LOGIN = gql`
-  ${USER_FRAGMENT}
-  mutation Login($data: LoginInput!) {
-    login(data: $data) {
-      accessToken
-      refreshToken
-      user {
-        ...UserFragment
-      }
-    }
-  }
-`;
+`);
