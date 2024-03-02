@@ -12,7 +12,7 @@
     "lint-staged": "lint-staged",
     "prettier": "prettier --write --ignore-unknown .",
     "prettier:check": "prettier --check --ignore-unknown .",
-    "codegen:compile": "graphql-codegen"
+    "codegen:compile": "graphql-codegen && prettier --write \"./types/__generated__/*.ts\""
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx}": [
