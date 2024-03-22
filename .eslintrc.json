@@ -1,20 +1,13 @@
 {
-  "extends": ["next", "prettier", "next/core-web-vitals"],
-  "plugins": ["react", "react-hooks", "prettier"],
+  "extends": ["next", "prettier", "next/core-web-vitals", "plugin:@typescript-eslint/recommended"],
+  "plugins": ["react", "react-hooks", "prettier", "@typescript-eslint"],
   "rules": {
     "quotes": ["error", "single"],
     "semi": ["error", "always"],
-    "no-unused-vars": [
-      "error",
-      {
-        "args": "after-used",
-        "caughtErrors": "none",
-        "ignoreRestSiblings": true,
-        "vars": "all"
-      }
-    ],
     "no-console": "warn",
     "prefer-const": "error",
-    "react-hooks/exhaustive-deps": "error"
+    "react-hooks/exhaustive-deps": "error",
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": "error"
   }
 }
