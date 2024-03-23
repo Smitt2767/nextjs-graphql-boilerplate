@@ -83,7 +83,7 @@ const Button = ({ icon: Icon, iconProps, className, children, ...props }: Button
     >
       {Icon && (
         <Icon
-          className="max-xs:size-[1.4em] size-[1.8em]"
+          className="size-[2em] flex-shrink-0"
           strokeWidth={0}
           fill="currentColor"
           {...iconProps}
@@ -114,13 +114,13 @@ const Controls = () => {
           onClick={togglePlay}
           icon={playing ? Pause : Play}
           iconProps={{
-            className: 'max-xs:size-[2.4em] z-20 size-[3.6em] max-md:size-[3em]'
+            className: 'size-[3em]'
           }}
         />
       </div>
       <div
         className={cn(
-          'absolute bottom-0 left-0 right-0 z-20 flex items-center gap-2 p-2 text-white',
+          'absolute bottom-0 left-0 right-0 z-20 flex items-center gap-2 px-3 py-2 text-white md:px-4 md:py-3',
           'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100',
           'translate-y-full group-focus-within:translate-y-0 group-hover:translate-y-0',
           'transition-[transform,_opacity] duration-150',
@@ -131,7 +131,8 @@ const Controls = () => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-1 items-center gap-2">
-          <div className="flex items-center gap-1">
+          {/* Video Played / Duration Info */}
+          <div className="flex items-center gap-1 text-xs md:text-sm">
             <span>{secondsToFormattedHMS(playedSeconds)}</span>
             <span>/</span>
             <span className="text-white/60">{secondsToFormattedHMS(duration)}</span>
@@ -163,7 +164,7 @@ const PlayerWrapper = ({ children }: { children: React.ReactNode }) => {
   const { togglePlay, isPlayerLoaded } = usePlayer();
   return (
     <div
-      className="group relative mx-auto flex aspect-video max-h-[85vh] w-full justify-center overflow-hidden bg-black text-lg"
+      className="group relative mx-auto flex aspect-video max-h-[85vh] w-full justify-center overflow-hidden bg-black text-sm"
       onClick={togglePlay}
     >
       {children}
@@ -195,13 +196,7 @@ const Player = ({ url, previewImage, title }: VideoPlayerProps) => {
       width="100%"
       height="auto"
       playsinline
-      playIcon={
-        <Play
-          className="max-xs:size-[2.4em] z-20 size-[3.6em] max-md:size-[3em]"
-          fill="white"
-          strokeWidth={0}
-        />
-      }
+      playIcon={<Play className="z-20 size-[3.2em]" fill="white" strokeWidth={0} />}
       light={light ? <PreviewImage alt={title} url={previewImage} /> : false}
       controls={false}
       url={url}
