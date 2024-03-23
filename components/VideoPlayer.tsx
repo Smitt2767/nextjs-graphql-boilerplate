@@ -102,7 +102,7 @@ const Button = ({ icon: Icon, iconProps, className, children, ...props }: Button
     >
       {Icon && (
         <Icon
-          className="max-xs:size-[1.4em] size-[2em]"
+          className="max-xs:size-[1.4em] size-[1.8em]"
           strokeWidth={0}
           fill="currentColor"
           {...iconProps}
@@ -120,7 +120,7 @@ const Controls = () => {
     <>
       <div
         className={cn(
-          'xs:gap-6 absolute left-0 right-0 top-1/2 z-20 flex -translate-y-1/2 items-center justify-center gap-2 text-white md:gap-16',
+          'xs:gap-6 absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 text-white md:gap-16',
           'opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100',
           {
             'opacity-100': !playing
@@ -140,9 +140,11 @@ const Controls = () => {
       <div
         className={cn(
           'absolute bottom-0 left-0 right-0 z-20 flex items-center gap-2 p-2 text-white',
-          'opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100',
+          'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100',
+          'translate-y-full group-focus-within:translate-y-0 group-hover:translate-y-0',
+          'transition-[transform,_opacity] duration-150',
           {
-            'opacity-100': !playing
+            'translate-y-0 opacity-100': !playing
           }
         )}
         onClick={(e) => e.stopPropagation()}
@@ -174,7 +176,7 @@ const PlayerWrapper = ({ children }: { children: React.ReactNode }) => {
   const { togglePlay, isPlayerLoaded } = usePlayer();
   return (
     <div
-      className="group relative mx-auto flex aspect-video max-h-[85vh] w-full justify-center bg-black text-lg"
+      className="group relative mx-auto flex aspect-video max-h-[85vh] w-full justify-center overflow-hidden bg-black text-lg"
       onClick={togglePlay}
     >
       {children}
