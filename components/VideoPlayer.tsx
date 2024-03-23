@@ -1,14 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import {
-  Play,
-  type LucideIcon,
-  PictureInPicture2,
-  type LucideProps,
-  Pause,
-  FastForward
-} from 'lucide-react';
+import { Play, type LucideIcon, PictureInPicture2, type LucideProps, Pause } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import React, {
@@ -102,24 +95,32 @@ const Button = ({ icon: Icon, iconProps, className, children, ...props }: Button
   return (
     <button
       className={cn(
-        'flex h-8 w-8 items-center justify-center rounded-md p-0 opacity-80 transition-opacity duration-150 hover:opacity-100',
+        'flex items-center justify-center rounded-md p-0 opacity-80 transition-opacity duration-150 hover:opacity-100',
         className
       )}
       {...props}
     >
-      {Icon && <Icon strokeWidth={0} fill="currentColor" {...iconProps} />} {children}
+      {Icon && (
+        <Icon
+          className="max-xs:size-[1.4em] size-[2em]"
+          strokeWidth={0}
+          fill="currentColor"
+          {...iconProps}
+        />
+      )}{' '}
+      {children}
     </button>
   );
 };
 
 const Controls = () => {
-  const { playing, togglePip, togglePlay, forward, backward } = usePlayer();
+  const { playing, togglePip, togglePlay } = usePlayer();
 
   return (
     <>
       <div
         className={cn(
-          'absolute left-0 right-0 top-1/2 z-20 flex -translate-y-1/2 items-center justify-center gap-8 text-white',
+          'xs:gap-6 absolute left-0 right-0 top-1/2 z-20 flex -translate-y-1/2 items-center justify-center gap-2 text-white md:gap-16',
           'opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100',
           {
             'opacity-100': !playing
@@ -128,22 +129,12 @@ const Controls = () => {
         onClick={(e) => e.stopPropagation()}
       >
         <Button
-          className="h-10 w-10 flex-shrink-0 rotate-180"
-          icon={FastForward}
-          iconProps={{ size: 40 }}
-          onClick={backward}
-        />
-        <Button
-          className="h-14 w-14 flex-shrink-0"
-          icon={playing ? Pause : Play}
-          iconProps={{ size: 56 }}
+          className="flex-shrink-0"
           onClick={togglePlay}
-        />
-        <Button
-          className="h-10 w-10 flex-shrink-0"
-          icon={FastForward}
-          iconProps={{ size: 40 }}
-          onClick={forward}
+          icon={playing ? Pause : Play}
+          iconProps={{
+            className: 'max-xs:size-[2.4em] z-20 size-[3.6em] max-md:size-[3em]'
+          }}
         />
       </div>
       <div
@@ -171,7 +162,7 @@ const Controls = () => {
       </div>
       <div
         className={cn(
-          'pointer-events-none absolute bottom-0 left-0 right-0 z-10 aspect-[6/1] bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100',
+          'pointer-events-none absolute inset-0 z-10 bg-black/40 opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100',
           { 'opacity-100': !playing }
         )}
       />
@@ -183,7 +174,7 @@ const PlayerWrapper = ({ children }: { children: React.ReactNode }) => {
   const { togglePlay, isPlayerLoaded } = usePlayer();
   return (
     <div
-      className="group relative mx-auto flex aspect-video max-h-[85vh] w-full justify-center bg-black"
+      className="group relative mx-auto flex aspect-video max-h-[85vh] w-full justify-center bg-black text-lg"
       onClick={togglePlay}
     >
       {children}
@@ -204,7 +195,13 @@ const Player = ({ url, previewImage, title }: VideoPlayerProps) => {
       width="100%"
       height="auto"
       playsinline
-      playIcon={<Play className="z-10" fill="white" size={56} />}
+      playIcon={
+        <Play
+          className="max-xs:size-[2.4em] z-20 size-[3.6em] max-md:size-[3em]"
+          fill="white"
+          strokeWidth={0}
+        />
+      }
       light={light ? <PreviewImage alt={title} url={previewImage} /> : false}
       controls={false}
       url={url}
