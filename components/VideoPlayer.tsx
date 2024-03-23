@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { cn, secondsToFormattedHMS } from '@/lib/utils';
 import { Play, type LucideIcon, PictureInPicture2, type LucideProps, Pause } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
@@ -11,15 +11,17 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useReducer
+  useState
 } from 'react';
 import ReactPlayer from 'react-player';
+import { type OnProgressProps } from 'react-player/base';
 const ReactLazyPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 
 type VideoPlayerProps = {
   url: string;
   previewImage: string;
   title: string;
+  duration: number;
 };
 
 type ButtonProps = {
@@ -33,15 +35,12 @@ type PlayerState = {
   pip: boolean;
   light: boolean;
   previewImage: string;
+  playedSeconds: number;
+  played: number;
+  loadedSeconds: number;
+  loaded: number;
+  duration: number;
 };
-
-type PlayerAction =
-  | { type: 'SET_PLAYER'; payload: ReactPlayer }
-  | { type: 'SET_PLAYING'; payload: boolean }
-  | { type: 'TOGGLE_PLAY' }
-  | { type: 'SET_PIP'; payload: boolean }
-  | { type: 'TOGGLE_PIP' }
-  | { type: 'TOGGLE_LIGHT' };
 
 type EmptyFunc = () => void;
 
@@ -57,29 +56,11 @@ type PlayerContextProps = PlayerState & {
   backward: EmptyFunc;
   onReady: (player: ReactPlayer) => void;
   seekTo: (seekAmount: number) => void;
+  onProgress: (progress: OnProgressProps) => void;
+  onDuration: (duration: number) => void;
 };
 
 const DEFAULT_SEEK_AMOUNT = 30;
-
-const reducer = (state: PlayerState, action: PlayerAction): PlayerState => {
-  const { type } = action;
-  switch (type) {
-    case 'SET_PLAYER':
-      return { ...state, player: action.payload };
-    case 'SET_PLAYING':
-      return { ...state, playing: action.payload };
-    case 'TOGGLE_PLAY':
-      return { ...state, playing: !state.playing };
-    case 'SET_PIP':
-      return { ...state, pip: action.payload };
-    case 'TOGGLE_PIP':
-      return { ...state, pip: !state.pip };
-    case 'TOGGLE_LIGHT':
-      return { ...state, light: !state.light };
-    default:
-      return state;
-  }
-};
 
 const PlayerContext = createContext<null | PlayerContextProps>(null);
 
@@ -95,7 +76,7 @@ const Button = ({ icon: Icon, iconProps, className, children, ...props }: Button
   return (
     <button
       className={cn(
-        'flex items-center justify-center rounded-md p-0 opacity-80 transition-opacity duration-150 hover:opacity-100',
+        'flex items-center justify-center gap-2 rounded-md p-0 opacity-80 transition-opacity duration-150 hover:opacity-100',
         className
       )}
       {...props}
@@ -107,14 +88,14 @@ const Button = ({ icon: Icon, iconProps, className, children, ...props }: Button
           fill="currentColor"
           {...iconProps}
         />
-      )}{' '}
+      )}
       {children}
     </button>
   );
 };
 
 const Controls = () => {
-  const { playing, togglePip, togglePlay } = usePlayer();
+  const { playing, playedSeconds, duration, togglePip, togglePlay } = usePlayer();
 
   return (
     <>
@@ -149,7 +130,13 @@ const Controls = () => {
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex flex-1 items-center gap-2">{/*  */}</div>
+        <div className="flex flex-1 items-center gap-2">
+          <div className="flex items-center gap-1">
+            <span>{secondsToFormattedHMS(playedSeconds)}</span>
+            <span>/</span>
+            <span className="text-white/60">{secondsToFormattedHMS(duration)}</span>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           {/* PIP */}
           <Button
@@ -190,7 +177,18 @@ const PreviewImage = ({ url, alt }: { url: string; alt: string }) => {
 };
 
 const Player = ({ url, previewImage, title }: VideoPlayerProps) => {
-  const { onPlay, onPause, onReady, onEnablePIP, onDisablePIP, playing, pip, light } = usePlayer();
+  const {
+    playing,
+    pip,
+    light,
+    onPlay,
+    onPause,
+    onReady,
+    onEnablePIP,
+    onDisablePIP,
+    onProgress,
+    onDuration
+  } = usePlayer();
 
   return (
     <ReactLazyPlayer
@@ -215,37 +213,54 @@ const Player = ({ url, previewImage, title }: VideoPlayerProps) => {
       onReady={onReady}
       onEnablePIP={onEnablePIP}
       onDisablePIP={onDisablePIP}
+      onProgress={onProgress}
+      onDuration={onDuration}
       onClickPreview={(e) => e?.stopPropagation()}
     />
   );
 };
 
 const VideoPlayer = (props: VideoPlayerProps) => {
-  const [state, dispatch] = useReducer(reducer, {
-    playing: true,
+  const [state, setState] = useState<PlayerState>({
+    // playing: true,
+    playing: false,
     player: null,
     pip: false,
-    light: true,
-    previewImage: props.previewImage
+    // light: true,
+    light: false,
+    previewImage: props.previewImage,
+    loaded: 0,
+    loadedSeconds: 0,
+    played: 0,
+    playedSeconds: 0,
+    duration: props.duration
   });
 
   const { player } = state;
+
   const isPlayerLoaded = Boolean(state.player);
 
-  const togglePlay = useCallback(() => dispatch({ type: 'TOGGLE_PLAY' }), []);
-  const onPlay = useCallback(() => dispatch({ type: 'SET_PLAYING', payload: true }), []);
-  const onPause = useCallback(() => dispatch({ type: 'SET_PLAYING', payload: false }), []);
+  const updateState = useCallback(<T extends keyof PlayerState>(key: T, value: PlayerState[T]) => {
+    setState((prev) => ({ ...prev, [key]: value }));
+  }, []);
 
-  const onEnablePIP = useCallback(() => dispatch({ type: 'SET_PIP', payload: true }), []);
-  const onDisablePIP = useCallback(() => dispatch({ type: 'SET_PIP', payload: false }), []);
-  const togglePip = useCallback(() => dispatch({ type: 'TOGGLE_PIP' }), []);
-
-  const onReady = useCallback(
-    (player: ReactPlayer) => dispatch({ type: 'SET_PLAYER', payload: player }),
+  const onPlay = useCallback(() => updateState('playing', true), [updateState]);
+  const onPause = useCallback(() => updateState('playing', false), [updateState]);
+  const togglePlay = useCallback(
+    () => setState((prev) => ({ ...prev, playing: !prev.playing })),
     []
   );
 
-  const toggleLight = useCallback(() => dispatch({ type: 'TOGGLE_LIGHT' }), []);
+  const onEnablePIP = useCallback(() => updateState('pip', true), [updateState]);
+  const onDisablePIP = useCallback(() => updateState('pip', false), [updateState]);
+  const togglePip = useCallback(() => setState((prev) => ({ ...prev, pip: !prev.pip })), []);
+
+  const onReady = useCallback(
+    (player: ReactPlayer) => updateState('player', player),
+    [updateState]
+  );
+
+  const toggleLight = useCallback(() => setState((prev) => ({ ...prev, light: !prev.light })), []);
 
   const seekTo = useCallback((seekAmount: number) => player?.seekTo(seekAmount), [player]);
 
@@ -256,6 +271,13 @@ const VideoPlayer = (props: VideoPlayerProps) => {
   const backward = useCallback(() => {
     if (player) player.seekTo(player.getCurrentTime() - DEFAULT_SEEK_AMOUNT);
   }, [player]);
+
+  const onProgress = useCallback(
+    (progress: OnProgressProps) => setState((prev) => ({ ...prev, ...progress })),
+    []
+  );
+
+  const onDuration = useCallback((value: number) => updateState('duration', value), [updateState]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -299,7 +321,9 @@ const VideoPlayer = (props: VideoPlayerProps) => {
       togglePip,
       seekTo,
       forward,
-      backward
+      backward,
+      onProgress,
+      onDuration
     }),
     [
       state,
@@ -313,7 +337,9 @@ const VideoPlayer = (props: VideoPlayerProps) => {
       togglePip,
       seekTo,
       forward,
-      backward
+      backward,
+      onProgress,
+      onDuration
     ]
   );
 
