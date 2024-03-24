@@ -8,13 +8,16 @@ import {
   type LucideProps,
   Pause,
   Maximize,
-  Minimize
+  Minimize,
+  SlidersHorizontal,
+  Settings
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import React, {
-  HTMLAttributes,
+  type HTMLAttributes,
   createContext,
+  forwardRef,
   useCallback,
   useContext,
   useEffect,
@@ -25,6 +28,19 @@ import React, {
 import ReactPlayer from 'react-player';
 import { type OnProgressProps } from 'react-player/base';
 import screenfull from 'screenfull';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuContentWithoutPortal,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger
+} from './ui/dropdown-menu';
 
 const ReactLazyPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 
@@ -40,6 +56,13 @@ type ButtonProps = {
   iconProps?: LucideProps;
 } & HTMLAttributes<HTMLButtonElement>;
 
+type Level = {
+  id: number;
+  height: number;
+  width: number;
+  url: Array<string>;
+};
+
 type PlayerState = {
   player: null | ReactPlayer;
   playing: boolean;
@@ -52,6 +75,9 @@ type PlayerState = {
   loaded: number;
   duration: number;
   isFullscreen: boolean;
+  textTracks: Array<TextTrack>;
+  levels: Array<Level>;
+  currentLevelIndex: number;
 };
 
 type EmptyFunc = () => void;
@@ -60,6 +86,8 @@ type PlayerContextProps = PlayerState & {
   containerRef: React.RefObject<HTMLDivElement>;
   title: string;
   isPlayerLoaded: boolean;
+  subtitles: Array<TextTrack>;
+  chapters: Array<TextTrack>;
   onPlay: EmptyFunc;
   onPause: EmptyFunc;
   togglePlay: EmptyFunc;
@@ -73,6 +101,7 @@ type PlayerContextProps = PlayerState & {
   seekTo: (seekAmount: number) => void;
   onProgress: (progress: OnProgressProps) => void;
   onDuration: (duration: number) => void;
+  onLevelChange: (levelIndex: number) => void;
 };
 
 const DEFAULT_SEEK_AMOUNT = 30;
@@ -87,27 +116,32 @@ const usePlayer = () => {
   return ctx;
 };
 
-const Button = ({ icon: Icon, iconProps, className, children, ...props }: ButtonProps) => {
-  return (
-    <button
-      className={cn(
-        'flex items-center justify-center gap-2 rounded-md p-0 opacity-80 transition-opacity duration-150 hover:opacity-100',
-        className
-      )}
-      {...props}
-    >
-      {Icon && (
-        <Icon
-          className="size-[2em] flex-shrink-0"
-          strokeWidth={0}
-          fill="currentColor"
-          {...iconProps}
-        />
-      )}
-      {children}
-    </button>
-  );
-};
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ icon: Icon, iconProps, className, children, ...props }, ref) => {
+    return (
+      <button
+        className={cn(
+          'flex items-center justify-center gap-2 rounded-md p-0 opacity-80 transition-opacity duration-150 hover:opacity-100',
+          className
+        )}
+        ref={ref}
+        {...props}
+      >
+        {Icon && (
+          <Icon
+            className="size-[2em] flex-shrink-0"
+            strokeWidth={0}
+            fill="currentColor"
+            {...iconProps}
+          />
+        )}
+        {children}
+      </button>
+    );
+  }
+);
+
+Button.displayName = 'Button';
 
 const TopControls = () => {
   const { playing, title } = usePlayer();
@@ -126,7 +160,7 @@ const TopControls = () => {
       )}
       onClick={(e) => e.stopPropagation()}
     >
-      <p className="truncate text-base md:text-xl">{title}</p>
+      <p className="flex-grow truncate text-base md:text-xl">{title}</p>
     </div>
   );
 };
@@ -158,11 +192,26 @@ const CenterControls = () => {
 };
 
 const BottomControls = () => {
-  const { playing, playedSeconds, duration, isFullscreen, togglePip, toggleFullscreen } =
-    usePlayer();
+  const ref = useRef<HTMLDivElement>(null);
+  const {
+    playing,
+    playedSeconds,
+    duration,
+    isFullscreen,
+    levels,
+    currentLevelIndex,
+    togglePip,
+    toggleFullscreen,
+    onLevelChange
+  } = usePlayer();
+
+  const DropdownContentComponent = isFullscreen
+    ? DropdownMenuContentWithoutPortal
+    : DropdownMenuContent;
 
   return (
     <div
+      ref={ref}
       className={cn(
         'absolute bottom-0 left-0 right-0 z-20 flex items-center gap-2 px-3 py-2 text-white md:px-4 md:py-3',
         'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100',
@@ -185,6 +234,45 @@ const BottomControls = () => {
       </div>
       {/* Right */}
       <div className="flex items-center gap-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              icon={Settings}
+              iconProps={{
+                fill: 'transparent',
+                strokeWidth: 2
+              }}
+            />
+          </DropdownMenuTrigger>
+          <DropdownContentComponent className="w-52" side="top" align="end" alignOffset={-20}>
+            <DropdownMenuLabel>Settings</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <SlidersHorizontal className="mr-2 size-[1em]" /> Quality
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuCheckboxItem
+                    checked={currentLevelIndex === -1}
+                    onCheckedChange={() => onLevelChange(-1)}
+                  >
+                    Auto
+                  </DropdownMenuCheckboxItem>
+                  {levels.map((level, index) => (
+                    <DropdownMenuCheckboxItem
+                      key={index}
+                      checked={currentLevelIndex === index}
+                      onCheckedChange={() => onLevelChange(index)}
+                    >
+                      {level.height}p
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            </DropdownMenuGroup>
+          </DropdownContentComponent>
+        </DropdownMenu>
         {/* PIP */}
         <Button
           icon={PictureInPicture2}
@@ -194,6 +282,7 @@ const BottomControls = () => {
           }}
           onClick={togglePip}
         />
+        {/* Fullscreen */}
         <Button
           icon={isFullscreen ? Minimize : Maximize}
           iconProps={{
@@ -296,13 +385,26 @@ const VideoPlayer = (props: VideoPlayerProps) => {
     played: 0,
     playedSeconds: 0,
     duration: props.duration,
-    isFullscreen: false
+    isFullscreen: false,
+    textTracks: [],
+    levels: [],
+    currentLevelIndex: -1
   });
 
-  const { player } = state;
+  const { player, textTracks, currentLevelIndex } = state;
 
   const isPlayerLoaded = Boolean(state.player);
   const title = props.title;
+
+  const subtitles = useMemo(
+    () => textTracks.filter((track) => track.kind === 'captions' || track.kind === 'subtitles'),
+    [textTracks]
+  );
+
+  const chapters = useMemo(
+    () => textTracks.filter((track) => track.kind === 'chapters'),
+    [textTracks]
+  );
 
   const updateState = useCallback(<T extends keyof PlayerState>(key: T, value: PlayerState[T]) => {
     setState((prev) => ({ ...prev, [key]: value }));
@@ -320,7 +422,9 @@ const VideoPlayer = (props: VideoPlayerProps) => {
   const togglePip = useCallback(() => setState((prev) => ({ ...prev, pip: !prev.pip })), []);
 
   const onReady = useCallback(
-    (player: ReactPlayer) => updateState('player', player),
+    (player: ReactPlayer) => {
+      updateState('player', player);
+    },
     [updateState]
   );
 
@@ -343,6 +447,38 @@ const VideoPlayer = (props: VideoPlayerProps) => {
 
   const onDuration = useCallback((value: number) => updateState('duration', value), [updateState]);
 
+  // set text tracks & levels
+  useEffect(() => {
+    if (player) {
+      const video = player.getInternalPlayer() as HTMLVideoElement | undefined | null;
+      if (video && video.textTracks.length > 0) {
+        updateState('textTracks', Array.from(video.textTracks));
+      }
+      const hls = player.getInternalPlayer('hls');
+      if (hls && hls.levels.length) {
+        updateState('levels', hls.levels as Array<Level>);
+        updateState('currentLevelIndex', hls.currentLevel ?? -1);
+      }
+    }
+  }, [player, updateState]);
+
+  useEffect(() => {
+    if (player) {
+      const hls = player.getInternalPlayer('hls');
+      if (hls) {
+        hls.currentLevel = currentLevelIndex;
+      }
+    }
+  }, [player, currentLevelIndex]);
+
+  const onLevelChange = useCallback(
+    (levelIndex: number) => {
+      updateState('currentLevelIndex', levelIndex);
+    },
+    [updateState]
+  );
+
+  // Fullscreen
   const toggleFullscreen = useCallback(() => {
     if (!containerRef.current) return;
     if (screenfull.isEnabled) {
@@ -352,7 +488,6 @@ const VideoPlayer = (props: VideoPlayerProps) => {
     }
   }, []);
 
-  // Fullscreen
   useEffect(() => {
     const handleFullscreenChange = () => {
       updateState('isFullscreen', screenfull.isFullscreen);
@@ -368,11 +503,8 @@ const VideoPlayer = (props: VideoPlayerProps) => {
       switch (e.key.toLocaleLowerCase()) {
         case ' ':
         case 'k':
-          if (isPlayerLoaded) {
-            togglePlay();
-          } else {
-            toggleLight();
-          }
+          if (isPlayerLoaded) togglePlay();
+          else toggleLight();
           break;
         case 'i':
           togglePip();
@@ -401,6 +533,8 @@ const VideoPlayer = (props: VideoPlayerProps) => {
       isPlayerLoaded,
       title,
       containerRef,
+      subtitles,
+      chapters,
       onPause,
       onPlay,
       togglePlay,
@@ -413,12 +547,15 @@ const VideoPlayer = (props: VideoPlayerProps) => {
       backward,
       onProgress,
       onDuration,
-      toggleFullscreen
+      toggleFullscreen,
+      onLevelChange
     }),
     [
       state,
       isPlayerLoaded,
       title,
+      subtitles,
+      chapters,
       onPlay,
       onPause,
       togglePlay,
@@ -431,7 +568,8 @@ const VideoPlayer = (props: VideoPlayerProps) => {
       backward,
       onProgress,
       onDuration,
-      toggleFullscreen
+      toggleFullscreen,
+      onLevelChange
     ]
   );
 
