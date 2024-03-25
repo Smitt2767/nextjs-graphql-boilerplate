@@ -10,7 +10,8 @@ import {
   Maximize,
   Minimize,
   SlidersHorizontal,
-  Settings
+  Settings,
+  Captions
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
@@ -78,6 +79,7 @@ type PlayerState = {
   textTracks: Array<TextTrack>;
   levels: Array<Level>;
   currentLevelIndex: number;
+  currentSubtitleLanguage: string;
 };
 
 type EmptyFunc = () => void;
@@ -102,6 +104,7 @@ type PlayerContextProps = PlayerState & {
   onProgress: (progress: OnProgressProps) => void;
   onDuration: (duration: number) => void;
   onLevelChange: (levelIndex: number) => void;
+  onSubtitleLanguageChange: (language: string) => void;
 };
 
 const DEFAULT_SEEK_AMOUNT = 30;
@@ -191,27 +194,127 @@ const CenterControls = () => {
   );
 };
 
-const BottomControls = () => {
-  const ref = useRef<HTMLDivElement>(null);
-  const {
-    playing,
-    playedSeconds,
-    duration,
-    isFullscreen,
-    levels,
-    currentLevelIndex,
-    togglePip,
-    toggleFullscreen,
-    onLevelChange
-  } = usePlayer();
+const QualityLevelsDropdownMenu = () => {
+  const { levels, currentLevelIndex, onLevelChange } = usePlayer();
+
+  const qualityLevel = useMemo(() => {
+    if (currentLevelIndex === -1) {
+      return 'Auto';
+    } else {
+      const currentQuality = levels[currentLevelIndex];
+      if (currentQuality) {
+        return `${currentQuality.height}p`;
+      }
+    }
+  }, [levels, currentLevelIndex]);
+
+  return (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger className="flex gap-2 [&_*]:m-0">
+        <SlidersHorizontal className="size-[1.2em]" /> Quality{' '}
+        <span className="ml-2 flex-grow truncate text-end text-xs text-muted-foreground">
+          {qualityLevel}
+        </span>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent>
+        <DropdownMenuCheckboxItem
+          checked={currentLevelIndex === -1}
+          onCheckedChange={() => onLevelChange(-1)}
+        >
+          Auto
+        </DropdownMenuCheckboxItem>
+        {levels.map((level, index) => (
+          <DropdownMenuCheckboxItem
+            key={index}
+            checked={currentLevelIndex === index}
+            onCheckedChange={() => onLevelChange(index)}
+          >
+            {level.height}p
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
+  );
+};
+
+const SubtitlesDropdownMenu = () => {
+  const { textTracks, currentSubtitleLanguage, onSubtitleLanguageChange } = usePlayer();
+
+  const subtitleLanguage = useMemo(() => {
+    if (currentSubtitleLanguage === '') {
+      return 'Off';
+    } else {
+      const track = textTracks.find((track) => track.language === currentSubtitleLanguage);
+      if (track) return track.label;
+    }
+    return '';
+  }, [textTracks, currentSubtitleLanguage]);
+
+  return (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger className="flex gap-2 [&_*]:m-0">
+        <Captions className="size-[1.4em]" /> Subtitles/CC{' '}
+        <span className="ml-2 flex-grow truncate text-end text-xs text-muted-foreground">
+          {subtitleLanguage}
+        </span>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent>
+        <DropdownMenuCheckboxItem
+          checked={currentSubtitleLanguage === ''}
+          onCheckedChange={() => onSubtitleLanguageChange('')}
+        >
+          Off
+        </DropdownMenuCheckboxItem>
+        {textTracks.map((track) => (
+          <DropdownMenuCheckboxItem
+            key={track.language}
+            checked={currentSubtitleLanguage === track.language}
+            onCheckedChange={() => onSubtitleLanguageChange(track.language)}
+          >
+            {track.label}
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
+  );
+};
+
+const SettingsControl = () => {
+  const { isFullscreen } = usePlayer();
 
   const DropdownContentComponent = isFullscreen
     ? DropdownMenuContentWithoutPortal
     : DropdownMenuContent;
 
   return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          icon={Settings}
+          iconProps={{
+            fill: 'transparent',
+            strokeWidth: 2
+          }}
+        />
+      </DropdownMenuTrigger>
+      <DropdownContentComponent className="w-56" side="top" align="end" alignOffset={-20}>
+        <DropdownMenuLabel>Settings</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <SubtitlesDropdownMenu />
+          <QualityLevelsDropdownMenu />
+        </DropdownMenuGroup>
+      </DropdownContentComponent>
+    </DropdownMenu>
+  );
+};
+
+const BottomControls = () => {
+  const { playing, playedSeconds, duration, isFullscreen, togglePip, toggleFullscreen } =
+    usePlayer();
+
+  return (
     <div
-      ref={ref}
       className={cn(
         'absolute bottom-0 left-0 right-0 z-20 flex items-center gap-2 px-3 py-2 text-white md:px-4 md:py-3',
         'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100',
@@ -234,45 +337,8 @@ const BottomControls = () => {
       </div>
       {/* Right */}
       <div className="flex items-center gap-3">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              icon={Settings}
-              iconProps={{
-                fill: 'transparent',
-                strokeWidth: 2
-              }}
-            />
-          </DropdownMenuTrigger>
-          <DropdownContentComponent className="w-52" side="top" align="end" alignOffset={-20}>
-            <DropdownMenuLabel>Settings</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <SlidersHorizontal className="mr-2 size-[1em]" /> Quality
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuCheckboxItem
-                    checked={currentLevelIndex === -1}
-                    onCheckedChange={() => onLevelChange(-1)}
-                  >
-                    Auto
-                  </DropdownMenuCheckboxItem>
-                  {levels.map((level, index) => (
-                    <DropdownMenuCheckboxItem
-                      key={index}
-                      checked={currentLevelIndex === index}
-                      onCheckedChange={() => onLevelChange(index)}
-                    >
-                      {level.height}p
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            </DropdownMenuGroup>
-          </DropdownContentComponent>
-        </DropdownMenu>
+        {/* Settings */}
+        <SettingsControl />
         {/* PIP */}
         <Button
           icon={PictureInPicture2}
@@ -388,10 +454,11 @@ const VideoPlayer = (props: VideoPlayerProps) => {
     isFullscreen: false,
     textTracks: [],
     levels: [],
-    currentLevelIndex: -1
+    currentLevelIndex: -1,
+    currentSubtitleLanguage: ''
   });
 
-  const { player, textTracks, currentLevelIndex } = state;
+  const { player, textTracks, currentLevelIndex, currentSubtitleLanguage } = state;
 
   const isPlayerLoaded = Boolean(state.player);
   const title = props.title;
@@ -452,7 +519,13 @@ const VideoPlayer = (props: VideoPlayerProps) => {
     if (player) {
       const video = player.getInternalPlayer() as HTMLVideoElement | undefined | null;
       if (video && video.textTracks.length > 0) {
-        updateState('textTracks', Array.from(video.textTracks));
+        const textTracks = Array.from(video.textTracks);
+
+        textTracks.forEach((track) => {
+          track.mode = 'hidden';
+        });
+
+        updateState('textTracks', textTracks);
       }
       const hls = player.getInternalPlayer('hls');
       if (hls && hls.levels.length) {
@@ -474,6 +547,21 @@ const VideoPlayer = (props: VideoPlayerProps) => {
   const onLevelChange = useCallback(
     (levelIndex: number) => {
       updateState('currentLevelIndex', levelIndex);
+    },
+    [updateState]
+  );
+
+  useEffect(() => {
+    textTracks.forEach((track) => {
+      if (track.language === currentSubtitleLanguage) {
+        track.mode = 'showing';
+      } else track.mode = 'hidden';
+    });
+  }, [textTracks, currentSubtitleLanguage]);
+
+  const onSubtitleLanguageChange = useCallback(
+    (language: string) => {
+      updateState('currentSubtitleLanguage', language);
     },
     [updateState]
   );
@@ -548,7 +636,8 @@ const VideoPlayer = (props: VideoPlayerProps) => {
       onProgress,
       onDuration,
       toggleFullscreen,
-      onLevelChange
+      onLevelChange,
+      onSubtitleLanguageChange
     }),
     [
       state,
@@ -569,7 +658,8 @@ const VideoPlayer = (props: VideoPlayerProps) => {
       onProgress,
       onDuration,
       toggleFullscreen,
-      onLevelChange
+      onLevelChange,
+      onSubtitleLanguageChange
     ]
   );
 
