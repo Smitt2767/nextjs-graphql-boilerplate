@@ -87,8 +87,8 @@ export const {
             if (networkError) {
               throw new AuthError('NETWORK_ERROR');
             }
-          } else if (error instanceof Error) {
-            throw new AuthError('SOMETHING_WENT_WRONG');
+          } else if (error instanceof AuthError) {
+            throw new AuthError(error.code);
           }
           throw new AuthError('SOMETHING_WENT_WRONG');
         }
@@ -97,7 +97,6 @@ export const {
   ],
   callbacks: {
     async jwt({ token, user, trigger }) {
-      console.log({ trigger, user, token });
       switch (trigger) {
         case 'signIn': {
           token.user = user;
