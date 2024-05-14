@@ -1,4 +1,4 @@
-import NextAuth from 'next-auth';
+import NextAuth, { CredentialsSignin } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { ROUTES } from './constants';
 import { LoginSchema } from './schemas';
@@ -22,9 +22,10 @@ declare module 'next-auth' {
   interface Session extends SessionUser {}
 }
 
-class AuthError extends Error {
-  constructor(code: string, message: string) {
-    super(JSON.stringify({ code, message }));
+class AuthError extends CredentialsSignin {
+  constructor(code: string) {
+    super();
+    this.code = code;
   }
 }
 
@@ -47,7 +48,7 @@ export const {
         const validateFields = LoginSchema.safeParse(credentials);
         try {
           if (!validateFields.success) {
-            throw new AuthError('VALIDATION_ERROR', 'Please provide email & password');
+            throw new AuthError('VALIDATION_ERROR');
           }
           const { data, errors } = await serverAuthClient.mutate<LoginResponseData>({
             mutation: LOGIN,
@@ -62,11 +63,11 @@ export const {
           if (errors && errors.length > 0) {
             const error = errors[0];
             const code = error.extensions.code as string;
-            throw new AuthError(code, error.message);
+            throw new AuthError(code);
           }
 
           if (!data?.login) {
-            throw new AuthError('INVALID_CREDENTIAL', 'Invalid credentials');
+            throw new AuthError('INVALID_CREDENTIAL');
           }
 
           return {
@@ -81,21 +82,22 @@ export const {
             if (graphQLErrors.length > 0) {
               const error = graphQLErrors[0];
               const code = error.extensions.code as string;
-              throw new AuthError(code, error.message);
+              throw new AuthError(code);
             }
             if (networkError) {
-              throw new AuthError('NETWORK_ERROR', networkError.message);
+              throw new AuthError('NETWORK_ERROR');
             }
           } else if (error instanceof Error) {
-            throw new AuthError('SOMETHING_WENT_WRONG', error.message);
+            throw new AuthError('SOMETHING_WENT_WRONG');
           }
-          throw new AuthError('SOMETHING_WENT_WRONG', 'Something went wrong');
+          throw new AuthError('SOMETHING_WENT_WRONG');
         }
       }
     })
   ],
   callbacks: {
     async jwt({ token, user, trigger }) {
+      console.log({ trigger, user, token });
       switch (trigger) {
         case 'signIn': {
           token.user = user;
