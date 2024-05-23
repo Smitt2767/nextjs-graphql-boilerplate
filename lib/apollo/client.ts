@@ -90,7 +90,7 @@ const responseLink = new ApolloLink((operation, forward) => {
 });
 
 let isRefreshing = false;
-let pendingRequests: Function[] = [];
+let pendingRequests: (() => void)[] = [];
 let newAccessToken: string;
 
 const resolvePendingRequests = () => {
