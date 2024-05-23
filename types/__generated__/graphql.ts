@@ -45,6 +45,7 @@ export type ForgotPasswordInput = {
 };
 
 export type LoginInput = {
+  device?: InputMaybe<UserDeviceInput>;
   email: Scalars['String']['input'];
   password: Scalars['String']['input'];
 };
@@ -71,6 +72,7 @@ export type Mutation = {
   refreshTokenAdmin?: Maybe<RefreshTokenResponse>;
   resendOtp?: Maybe<CommonMessageResponse>;
   resendVerifyUser?: Maybe<CommonMessageResponse>;
+  resendVerifyUserAdmin?: Maybe<CommonMessageResponse>;
   signUp?: Maybe<UserSignUpResponse>;
   updatePassword?: Maybe<CommonMessageResponse>;
   updatePasswordAdmin?: Maybe<CommonMessageResponse>;
@@ -122,6 +124,10 @@ export type MutationResendOtpArgs = {
 
 export type MutationResendVerifyUserArgs = {
   data: ResendVerifyUserInput;
+};
+
+export type MutationResendVerifyUserAdminArgs = {
+  data: ResendVerifyUserAdminInput;
 };
 
 export type MutationSignUpArgs = {
@@ -193,8 +199,14 @@ export type ResendOtpInput = {
   countryCode: Scalars['String']['input'];
 };
 
+export type ResendVerifyUserAdminInput = {
+  appId: Scalars['String']['input'];
+  email: Scalars['String']['input'];
+};
+
 export type ResendVerifyUserInput = {
   email: Scalars['String']['input'];
+  queryParams?: InputMaybe<Scalars['JSON']['input']>;
 };
 
 export type ResetTokenInput = {
@@ -216,10 +228,12 @@ export type SubscriptionPlanPermissionData = {
   allowed?: Maybe<Scalars['Boolean']['output']>;
   applyLimit?: Maybe<Scalars['Boolean']['output']>;
   errorMessage?: Maybe<Scalars['String']['output']>;
+  errorTitle?: Maybe<Scalars['String']['output']>;
   frequency?: Maybe<Scalars['Int']['output']>;
   key?: Maybe<Scalars['String']['output']>;
   limit?: Maybe<Scalars['Int']['output']>;
   limitMessage?: Maybe<Scalars['String']['output']>;
+  limitTitle?: Maybe<Scalars['String']['output']>;
 };
 
 export type UpdatePasswordInput = {
@@ -233,7 +247,7 @@ export type User = {
   accountDeletedAt?: Maybe<Scalars['DateTime']['output']>;
   address?: Maybe<UserAddress>;
   assignedPlan?: Maybe<Scalars['String']['output']>;
-  assignedPlanExpiry?: Maybe<Scalars['String']['output']>;
+  assignedPlanExpiry?: Maybe<Scalars['DateTime']['output']>;
   authService?: Maybe<AuthService>;
   authServiceId?: Maybe<Scalars['String']['output']>;
   contactNumber?: Maybe<Scalars['String']['output']>;
@@ -251,12 +265,14 @@ export type User = {
   metaData?: Maybe<Scalars['JSON']['output']>;
   permissions?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
   profileImage?: Maybe<Scalars['String']['output']>;
+  purchases?: Maybe<Array<Maybe<UserPurchase>>>;
   roles?: Maybe<Array<Maybe<UserRole>>>;
   stripeCustomerId?: Maybe<Scalars['String']['output']>;
   submittedFormIds?: Maybe<Array<Maybe<Scalars['ID']['output']>>>;
   subscriptionPlanPermissions?: Maybe<Array<Maybe<SubscriptionPlanPermissionData>>>;
   totalPrayerTime?: Maybe<Scalars['Int']['output']>;
   type?: Maybe<UserType>;
+  uid?: Maybe<Scalars['Int']['output']>;
   updatedAt?: Maybe<Scalars['DateTime']['output']>;
   username?: Maybe<Scalars['String']['output']>;
   workspaceId?: Maybe<Scalars['ID']['output']>;
@@ -272,10 +288,36 @@ export type UserAddress = {
   state?: Maybe<Scalars['String']['output']>;
 };
 
+export type UserDeviceInput = {
+  id: Scalars['String']['input'];
+  model: Scalars['String']['input'];
+  os?: InputMaybe<UserDeviceOsInput>;
+  type?: InputMaybe<Scalars['String']['input']>;
+  vendor?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UserDeviceOsInput = {
+  name: Scalars['String']['input'];
+  version?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UserForgetPasswordInput = {
   appId: Scalars['String']['input'];
   email: Scalars['String']['input'];
 };
+
+export type UserPurchase = {
+  __typename?: 'UserPurchase';
+  createdAt?: Maybe<Scalars['DateTime']['output']>;
+  expiredAt?: Maybe<Scalars['DateTime']['output']>;
+  isActive?: Maybe<Scalars['Boolean']['output']>;
+  key?: Maybe<Scalars['String']['output']>;
+  type?: Maybe<UserPurchaseType>;
+};
+
+export enum UserPurchaseType {
+  OneTimeSubscription = 'ONE_TIME_SUBSCRIPTION'
+}
 
 export enum UserRole {
   Admin = 'ADMIN',
@@ -293,9 +335,10 @@ export type UserSignUpInput = {
   countryCode?: InputMaybe<Scalars['String']['input']>;
   email: Scalars['String']['input'];
   firstName: Scalars['String']['input'];
-  lastName?: InputMaybe<Scalars['String']['input']>;
+  lastName: Scalars['String']['input'];
   password: Scalars['String']['input'];
   profileImage?: InputMaybe<Scalars['String']['input']>;
+  queryParams?: InputMaybe<Scalars['JSON']['input']>;
   state?: InputMaybe<Scalars['String']['input']>;
   username: Scalars['String']['input'];
   zipCode: Scalars['String']['input'];
@@ -312,6 +355,7 @@ export enum UserType {
 }
 
 export type ValidateTokenInput = {
+  device?: InputMaybe<UserDeviceInput>;
   providerKey: ProviderKey;
   token: Scalars['String']['input'];
 };
@@ -330,6 +374,7 @@ export type VerifyUserContactNoInput = {
 };
 
 export type VerifyUserInput = {
+  device?: InputMaybe<UserDeviceInput>;
   setPassword?: InputMaybe<Scalars['Boolean']['input']>;
   token: Scalars['String']['input'];
   uid: Scalars['ID']['input'];
