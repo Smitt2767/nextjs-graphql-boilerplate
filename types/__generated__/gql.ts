@@ -13,10 +13,8 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
  * Therefore it is highly recommended to use the babel or swc plugin for production.
  */
 const documents = {
-  '\n  fragment UserFragment on User {\n    id\n    firstName\n    lastName\n    email\n    profileImage\n    roles\n    type\n  }\n':
-    types.UserFragmentFragmentDoc,
-  '\n  mutation RefreshToken($data: RefreshTokenInput!) {\n    refreshToken(data: $data) {\n      accessToken\n      user {\n        ...UserFragment\n      }\n    }\n  }\n':
-    types.RefreshTokenDocument
+  '\n  query Topics($filter: TopicsFilter, $sort: TopicsSort) {\n    topics(filter: $filter, sort: $sort) {\n      topics {\n        id\n        key\n        name\n      }\n      count\n    }\n  }\n':
+    types.TopicsDocument
 };
 
 /**
@@ -37,14 +35,8 @@ export function gql(source: string): unknown;
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(
-  source: '\n  fragment UserFragment on User {\n    id\n    firstName\n    lastName\n    email\n    profileImage\n    roles\n    type\n  }\n'
-): (typeof documents)['\n  fragment UserFragment on User {\n    id\n    firstName\n    lastName\n    email\n    profileImage\n    roles\n    type\n  }\n'];
-/**
- * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function gql(
-  source: '\n  mutation RefreshToken($data: RefreshTokenInput!) {\n    refreshToken(data: $data) {\n      accessToken\n      user {\n        ...UserFragment\n      }\n    }\n  }\n'
-): (typeof documents)['\n  mutation RefreshToken($data: RefreshTokenInput!) {\n    refreshToken(data: $data) {\n      accessToken\n      user {\n        ...UserFragment\n      }\n    }\n  }\n'];
+  source: '\n  query Topics($filter: TopicsFilter, $sort: TopicsSort) {\n    topics(filter: $filter, sort: $sort) {\n      topics {\n        id\n        key\n        name\n      }\n      count\n    }\n  }\n'
+): (typeof documents)['\n  query Topics($filter: TopicsFilter, $sort: TopicsSort) {\n    topics(filter: $filter, sort: $sort) {\n      topics {\n        id\n        key\n        name\n      }\n      count\n    }\n  }\n'];
 
 export function gql(source: string) {
   return (documents as any)[source] ?? {};
